@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI Journal</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#F0EBE0">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F0EBE0;--paper:#FAF6EC;--ink:#111;--soft:#6B6558;--line:#D8D0BE;--red:#C43E2C;--green:#3E7A4A;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.5}
+  body{padding:32px 20px 80px;min-height:100vh}
+  .wrap{max-width:1000px;margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:center;padding-bottom:20px;border-bottom:2px solid var(--ink);margin-bottom:48px}
+  .masthead{font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-.01em}
+  .masthead em{font-style:italic;color:var(--red)}
+  .header-right{display:flex;align-items:center;gap:12px}
+  .icon-btn{background:transparent;border:1px solid var(--line);width:38px;height:38px;font-size:15px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;position:relative}
+  .icon-btn:hover{background:var(--paper);border-color:var(--ink)}
+  .icon-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .icon-btn.muted{opacity:.35}
+  .sync-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .3s}
+  .sync-dot.ok{background:var(--green)}
+  .sync-dot.err{background:var(--red)}
+  .sync-dot.busy{background:#E0A93B;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .date{font-size:12px;text-transform:uppercase;letter-spacing:.15em;color:var(--soft)}
+  .hero{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;padding:40px 0 48px;border-bottom:1px solid var(--line);margin-bottom:48px}
+  .hero-left .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.25em;color:var(--red);font-weight:600;margin-bottom:16px}
+  .hero-left h1{font-family:'DM Serif Display',serif;font-size:clamp(40px,6vw,64px);line-height:1;letter-spacing:-.02em;margin-bottom:16px}
+  .hero-left h1 em{font-style:italic;color:var(--red)}
+  .hero-left p{font-size:15px;color:var(--soft);line-height:1.6;max-width:400px}
+  .hero-right{text-align:right}
+  .hero-pct{font-family:'DM Serif Display',serif;font-size:clamp(120px,18vw,220px);line-height:.85;letter-spacing:-.04em}
+  .hero-pct sup{font-size:.25em;vertical-align:super;color:var(--red)}
+  .hero-of{font-size:13px;text-transform:uppercase;letter-spacing:.2em;color:var(--soft);margin-top:12px}
+  .hero-forecast{font-size:13px;color:var(--soft);margin-top:8px;font-style:italic}
+  .hero-forecast strong{color:var(--ink);font-style:normal}
+  .bars{margin-bottom:48px}
+  .bar-row{padding:24px 0;border-bottom:1px solid var(--line)}
+  .bar-row:first-child{border-top:1px solid var(--line)}
+  .bar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .bar-name{font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-.01em}
+  .bar-name .num{color:var(--red);font-style:italic}
+  .bar-val{font-size:15px;color:var(--soft)}
+  .bar-val strong{color:var(--ink);font-weight:600}
+  .bar-track{height:8px;background:var(--line);overflow:hidden;position:relative}
+  .bar-fill{height:100%;background:var(--ink);transition:width .8s ease}
+  .bar-fill.accent{background:var(--red)}
+  .section{border-bottom:1px solid var(--line)}
+  .section-head{display:flex;justify-content:space-between;align-items:center;padding:24px 0;cursor:pointer;user-select:none}
+  .section-title{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.01em}
+  .section-meta{color:var(--soft);font-size:13px;display:flex;align-items:center;gap:12px;text-transform:uppercase;letter-spacing:.1em}
+  .chev{width:8px;height:8px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg);transition:transform .3s}
+  .section.open .chev{transform:rotate(-135deg)}
+  .section-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
+  .section.open .section-body{max-height:700px}
+  .section-inner{padding-bottom:32px}
+  .inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+  .field{border:1px solid var(--ink);padding:20px;background:var(--paper);transition:box-shadow .3s}
+  @keyframes fieldReach{0%{transform:scale(1)}40%{transform:scale(1.03);box-shadow:0 0 0 0 rgba(196,62,44,.4)}70%{transform:scale(1.03);box-shadow:0 0 0 12px rgba(196,62,44,0)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(196,62,44,0)}}
+  .field.reached{animation:fieldReach .7s ease}
+  .field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--soft);margin-bottom:12px;font-weight:600}
+  .field .row{display:flex;align-items:baseline;justify-content:space-between}
+  .field input{background:transparent;border:none;font-family:'DM Serif Display',serif;font-size:40px;color:var(--ink);width:100%;outline:none}
+  .field .target{font-size:13px;color:var(--soft)}
+  .field-bar{height:3px;background:var(--line);margin-top:14px;overflow:hidden}
+  .field-bar-fill{height:100%;background:var(--ink);transition:width .4s ease}
+  .field.completed .field-bar-fill{background:var(--red)}
+  .catchup-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-top:1px solid var(--line);margin-top:16px}
+  .catchup-label{font-size:13px;color:var(--soft)}
+  .catchup-label strong{color:var(--ink);font-weight:600;display:block;margin-bottom:2px}
+  .switch{position:relative;display:inline-block;width:46px;height:24px}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;cursor:pointer;inset:0;background:var(--line);transition:.3s;border-radius:24px}
+  .slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:var(--paper);transition:.3s;border-radius:50%}
+  .switch input:checked + .slider{background:var(--red)}
+  .switch input:checked + .slider:before{transform:translateX(22px)}
+  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--ink)}
+  .day{padding:16px 8px;text-align:center;border-right:1px solid var(--line);background:var(--paper)}
+  .day:last-child{border-right:none}
+  .day-name{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--soft);margin-bottom:8px;font-weight:600}
+  .day-val{font-family:'DM Serif Display',serif;font-size:24px}
+  .day-today{background:var(--ink);color:var(--paper)}
+  .day-today .day-name{color:var(--paper);opacity:.7}
+  .test-btn{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--paper);border:none;padding:16px 24px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.15em;cursor:pointer;box-shadow:4px 4px 0 var(--red);transition:transform .2s,box-shadow .2s;z-index:50}
+  .test-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--red)}
+  .modal-bg{position:fixed;inset:0;background:rgba(17,17,17,.85);display:none;align-items:center;justify-content:center;z-index:100;padding:24px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--paper);max-width:520px;width:100%;padding:48px 40px;border:2px solid var(--ink);box-shadow:8px 8px 0 var(--red);animation:pop .4s cubic-bezier(.2,.8,.2,1);position:relative;max-height:90vh;overflow-y:auto}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.25em;color:var(--red);font-weight:700;margin-bottom:12px}
+  .modal h2{font-family:'DM Serif Display',serif;font-size:34px;line-height:1;letter-spacing:-.02em;margin-bottom:24px}
+  .modal h2 em{font-style:italic;color:var(--red)}
+  .modal p{color:var(--ink);font-size:15px;line-height:1.6;margin-bottom:16px}
+  .modal p strong{font-weight:700}
+  .modal button.primary{margin-top:16px;background:var(--ink);color:var(--paper);border:none;padding:16px 28px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.15em;cursor:pointer;width:100%}
+  .modal button.primary:hover{background:var(--red)}
+  .modal .settings-field{margin-bottom:18px}
+  .modal .settings-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--soft);margin-bottom:8px;font-weight:600}
+  .modal .settings-field input{width:100%;background:var(--paper);border:1px solid var(--ink);padding:12px 14px;font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);outline:none}
+  .modal .settings-field input:focus{border-color:var(--red)}
+  .modal .settings-hint{font-size:11px;color:var(--soft);margin-top:6px;line-height:1.5}
+  .modal .settings-hint a{color:var(--red);text-decoration:none;border-bottom:1px solid currentColor}
+  .modal .settings-row{display:flex;gap:10px;margin-top:20px}
+  .modal .settings-row button{flex:1;padding:14px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.15em;cursor:pointer;border:1px solid var(--ink);background:var(--paper);color:var(--ink);transition:all .2s}
+  .modal .settings-row button:hover{background:var(--ink);color:var(--paper)}
+  .modal .settings-row button.danger:hover{background:var(--red);border-color:var(--red)}
+  .modal .sync-status{margin-top:16px;padding:12px;background:var(--paper);border-left:3px solid var(--line);font-size:12px;color:var(--soft);line-height:1.5}
+  .modal .sync-status.ok{border-color:var(--green)}
+  .modal .sync-status.err{border-color:var(--red)}
+  .footer{margin-top:32px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.15em}
+  .footer a{color:var(--soft);text-decoration:none;border-bottom:1px solid var(--line)}
+  @media(max-width:720px){.hero{grid-template-columns:1fr}.hero-right{text-align:left}.inputs{grid-template-columns:1fr}.week-grid{grid-template-columns:repeat(4,1fr)}.header-right .date{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="masthead">KPI <em>Journal</em></div>
+    <div class="header-right">
+      <button class="icon-btn" id="bellBtn" title="Уведомления">🔔</button>
+      <button class="icon-btn" id="pipBtn" title="Открыть мини-режим">📌</button>
+      <button class="icon-btn" id="settingsBtn" title="Настройки синхронизации">⚙️<span class="sync-dot" id="syncDot"></span></button>
+      <button class="icon-btn" id="resetBtn" title="Сбросить все данные">↺</button>
+      <div class="date" id="dateLabel"></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-left">
+      <div class="kicker">Месячная цель</div>
+      <h1>Твой <em>темп</em>.<br>Твой <em>ритм</em>.</h1>
+      <p>Считай только сегодняшний день — остальное сделает система. Каждый ввод приближает к главной цифре.</p>
+    </div>
+    <div class="hero-right">
+      <div class="hero-pct" id="mainPct">0<sup>%</sup></div>
+      <div class="hero-of">из 100% цели</div>
+      <div class="hero-forecast" id="forecast">—</div>
+    </div>
+  </section>
+
+  <section class="bars">
+    <div class="bar-row">
+      <div class="bar-head"><div class="bar-name"><span class="num" id="kCalls">0</span> / 300 звонков</div><div class="bar-val"><strong id="pCalls">0%</strong></div></div>
+      <div class="bar-track"><div class="bar-fill" id="kCallsBar" style="width:0%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-head"><div class="bar-name"><span class="num" id="kMin">0</span> / 1200 минут</div><div class="bar-val"><strong id="pMin">0%</strong></div></div>
+      <div class="bar-track"><div class="bar-fill accent" id="kMinBar" style="width:0%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-head"><div class="bar-name"><span class="num" id="kAn">0</span> / 60 аналитик</div><div class="bar-val"><strong id="pAn">0%</strong></div></div>
+      <div class="bar-track"><div class="bar-fill" id="kAnBar" style="width:0%"></div></div>
+    </div>
+  </section>
+
+  <div class="section open" id="secDaily">
+    <div class="section-head" onclick="toggle('secDaily')">
+      <div class="section-title">Сегодня</div>
+      <div class="section-meta"><span id="todayMeta">0 / 3</span><div class="chev"></div></div>
+    </div>
+    <div class="section-body"><div class="section-inner">
+      <div class="inputs">
+        <div class="field" id="fieldCalls"><label>Звонки</label><div class="row"><input type="number" id="inCalls" min="0" placeholder="0"><span class="target" id="targetCalls">/ 15</span></div><div class="field-bar"><div class="field-bar-fill" id="fieldBarCalls" style="width:0%"></div></div></div>
+        <div class="field" id="fieldMin"><label>Минуты</label><div class="row"><input type="number" id="inMin" min="0" placeholder="0"><span class="target" id="targetMin">/ 60</span></div><div class="field-bar"><div class="field-bar-fill" id="fieldBarMin" style="width:0%"></div></div></div>
+        <div class="field" id="fieldAn"><label>Аналитики</label><div class="row"><input type="number" id="inAn" min="0" placeholder="0"><span class="target" id="targetAn">/ 3</span></div><div class="field-bar"><div class="field-bar-fill" id="fieldBarAn" style="width:0%"></div></div></div>
+      </div>
+      <div class="catchup-row">
+        <div class="catchup-label"><strong>Догоняющий режим</strong>Дневная норма растёт, если ты отстаёшь от графика месяца</div>
+        <label class="switch"><input type="checkbox" id="catchupToggle"><span class="slider"></span></label>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="section" id="secWeek">
+    <div class="section-head" onclick="toggle('secWeek')">
+      <div class="section-title">Эта неделя</div>
+      <div class="section-meta"><span id="weekMeta">0 / 75</span><div class="chev"></div></div>
+    </div>
+    <div class="section-body"><div class="section-inner"><div class="week-grid" id="weekGrid"></div></div></div>
+  </div>
+
+  <div class="footer">
+    <div>KPI Journal · v3.2</div>
+    <div id="syncFooter">Синхронизация: выкл</div>
+  </div>
+</div>
+
+<button class="test-btn" onclick="fireAlarm()">Test alarm</button>
+
+<!-- Модалка будильника -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-kicker">Напоминание · 13:00 / 15:00</div>
+    <h2 id="modalTitle">Время сверить темп</h2>
+    <p id="modalBody"></p>
+    <div id="modalGoal" style="margin-top:20px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--soft)"></div>
+    <button class="primary" onclick="closeModal()">Понятно, иду работать</button>
+  </div>
+</div>
+
+<!-- Модалка настроек синхронизации -->
+<div class="modal-bg" id="settingsBg" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-kicker">Настройки · Синхронизация с GitHub Gist</div>
+    <h2>Не терять <em>данные</em></h2>
+    <p style="font-size:13px;color:var(--soft)">Токен и ID хранятся только в этом браузере. Данные KPI пишутся в твой секретный Gist.</p>
+
+    <div class="settings-field">
+      <label>Personal Access Token (ghp_...)</label>
+      <input type="password" id="tokenInput" placeholder="ghp_..." autocomplete="off">
+      <div class="settings-hint">Создай на <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a>, только право <strong>gist</strong>. Не публикуй токен.</div>
+    </div>
+
+    <div class="settings-field">
+      <label>Gist ID</label>
+      <input type="text" id="gistInput" placeholder="например, 94faa984..." autocomplete="off">
+      <div class="settings-hint">Из адреса твоего секретного гиста: <code>gist.github.com/ник/<strong>ID</strong></code>.</div>
+    </div>
+
+    <div class="settings-row">
+      <button onclick="saveSyncSettings()">Сохранить</button>
+      <button onclick="manualSync()">Синхр. сейчас</button>
+    </div>
+    <div class="settings-row">
+      <button class="danger" onclick="clearSyncSettings()">Отключить</button>
+    </div>
+
+    <div class="sync-status" id="syncStatus">Введи токен и ID, нажми «Сохранить», затем «Синхр. сейчас».</div>
+  </div>
+</div>
+
+<script>
+// ================== КОНСТАНТЫ ==================
+const USER_NAME = 'Никита';
+const GOAL = { calls: 300, minutes: 1200, analytics: 60 };
+const BASE_TARGET = { calls: 15, minutes: 60, analytics: 3 };
+const ALARM_TIMES = ['13:00', '15:00'];
+const MOTIVATIONS = [
+  { bad: 'завтра придётся догонять, а в конце месяца цифры не сойдутся.', good: 'вечером закроешь ноутбук со спокойной головой, без вины.' },
+  { bad: 'каждый пропущенный день — это долг перед собой, который придётся отдавать.', good: 'каждый закрытый день — это кирпичик в стене твоего результата.' },
+  { bad: 'никто не сделает эти звонки за тебя.', good: 'ты уже вложил в это время. Не сдавай на полпути.' },
+  { bad: 'без сегодняшнего шага завтра будет только тяжелее.', good: 'начни с одного звонка. Дальше пойдёт по инерции.' },
+  { bad: 'месяц не бесконечен. Каждый день на счету.', good: 'ты способен на большее, чем кажется сейчас.' },
+  { bad: 'прокрастинация сегодня — это паника в конце месяца.', good: 'дисциплина — это свобода. Сделай и забудь.' },
+  { bad: 'потом будешь жалеть об этом моменте.', good: 'после работы будет приятнее, если знаешь, что сделал.' },
+  { bad: 'твоя цель не приблизится сама.', good: 'ты не робот — но сегодня нужно чуть-чуть.' },
+  { bad: 'скука — не повод бросить. Просто начни.', good: 'каждое действие приближает тебя к результату.' },
+  { bad: 'в конце месяца не будет волшебного дня, чтобы всё догнать.', good: 'поставь галочку и иди дальше. Это работает.' },
+  { bad: 'ты сам выбрал эту цель. Не отступай.', good: 'маленький шаг сегодня — большой результат завтра.' },
+  { bad: 'один пропущенный день легко превращается в три.', good: 'ты справишься. Начни прямо сейчас.' }
+];
+
+// ================== STORAGE ==================
+const DATA_KEY = 'kpi_v3_data';
+const SETTINGS_KEY = 'kpi_v3_settings';
+const SYNC_KEY = 'kpi_v3_sync';
+
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function getData() { try { return JSON.parse(localStorage.getItem(DATA_KEY) || '{}'); } catch { return {}; } }
+function saveDay(k, v) { const d = getData(); d[k] = v; localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
+function getDay(k) { return getData()[k] || { calls: 0, minutes: 0, analytics: 0 }; }
+function getSettings() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { return {}; } }
+function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+let settings = { catchUp: false, ...getSettings() };
+
+function getSync() { try { return JSON.parse(localStorage.getItem(SYNC_KEY) || '{}'); } catch { return {}; } }
+function saveSync(s) { localStorage.setItem(SYNC_KEY, JSON.stringify(s)); }
+
+// ================== DATE HELPERS ==================
+function parseKey(k) { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); }
+function startOfWeek(d) { const x = new Date(d), day = x.getDay(); x.setDate(x.getDate() - day + (day === 0 ? -6 : 1)); x.setHours(0, 0, 0, 0); return x; }
+function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function endOfMonth(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
+function isWorkday(d) { const day = d.getDay(); return day !== 0 && day !== 6; }
+function countWorkdays(start, end) { let c = 0; const d = new Date(start); d.setHours(0, 0, 0, 0); end = new Date(end); end.setHours(23, 59, 59, 999); while (d <= end) { if (isWorkday(d)) c++; d.setDate(d.getDate() + 1); } return c; }
+function sumRange(s, e) {
+  const data = getData(), t = { calls: 0, minutes: 0, analytics: 0 };
+  const ss = new Date(s), ee = new Date(e); ss.setHours(0, 0, 0, 0); ee.setHours(23, 59, 59, 999);
+  for (const [k, v] of Object.entries(data)) {
+    const dt = parseKey(k);
+    if (dt >= ss && dt <= ee) {
+      t.calls += v.calls || 0;
+      t.minutes += v.minutes || 0;
+      t.analytics += v.analytics || 0;
+    }
+  }
+  return t;
+}
+
+// ================== ДОГОНЯЮЩИЙ РЕЖИМ ==================
+function getTodayTarget() {
+  const base = { ...BASE_TARGET };
+  if (!settings.catchUp) return base;
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const workdaysPassed = countWorkdays(monthStart, now);
+  const monthEnd = endOfMonth(now);
+  const workdaysTotal = countWorkdays(monthStart, monthEnd);
+  const workdaysRemaining = Math.max(1, workdaysTotal - workdaysPassed);
+  const month = sumRange(monthStart, now);
+  const deficit = {
+    calls: Math.max(0, base.calls * workdaysPassed - month.calls),
+    minutes: Math.max(0, base.minutes * workdaysPassed - month.minutes),
+    analytics: Math.max(0, base.analytics * workdaysPassed - month.analytics)
+  };
+  return {
+    calls: base.calls + Math.ceil(deficit.calls / workdaysRemaining),
+    minutes: base.minutes + Math.ceil(deficit.minutes / workdaysRemaining),
+    analytics: base.analytics + Math.ceil(deficit.analytics / workdaysRemaining)
+  };
+}
+
+// ================== ПРОГНОЗ ==================
+function getForecast() {
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const workdaysPassed = countWorkdays(monthStart, now);
+  if (workdaysPassed === 0) return null;
+  const workdaysTotal = countWorkdays(monthStart, endOfMonth(now));
+  const month = sumRange(monthStart, now);
+  const pctOf = (actual, passed, total, goal) => {
+    if (actual === 0) return 0;
+    return Math.round((actual / passed) * total / goal * 100);
+  };
+  const f = {
+    calls: pctOf(month.calls, workdaysPassed, workdaysTotal, GOAL.calls),
+    minutes: pctOf(month.minutes, workdaysPassed, workdaysTotal, GOAL.minutes),
+    analytics: pctOf(month.analytics, workdaysPassed, workdaysTotal, GOAL.analytics)
+  };
+  return Math.round((f.calls + f.minutes + f.analytics) / 3);
+}
+
+// ================== ГЕНЕРАТОР СООБЩЕНИЙ ==================
+function buildMotivationMessage() {
+  const forecast = getForecast();
+  const now = new Date();
+  const month = sumRange(startOfMonth(now), now);
+  const today = getDay(todayKey());
+  const target = getTodayTarget();
+  const totalActual = month.calls + month.minutes + month.analytics;
+
+  if (totalActual === 0) {
+    return {
+      title: USER_NAME + ', день начинается',
+      body: 'Цель дня: ' + target.calls + ' звонков · ' + target.minutes + ' мин · ' + target.analytics + ' аналитики. Один звонок — и ты в игре.'
+    };
+  }
+  const left = {
+    calls: Math.max(0, target.calls - (today.calls || 0)),
+    minutes: Math.max(0, target.minutes - (today.minutes || 0)),
+    analytics: Math.max(0, target.analytics - (today.analytics || 0))
+  };
+  const todayDone = left.calls === 0 && left.minutes === 0 && left.analytics === 0;
+  const leftStr = todayDone
+    ? 'Сегодня норма закрыта.'
+    : 'Осталось на сегодня: ' + left.calls + ' звонков · ' + left.minutes + ' мин.';
+
+  if (forecast !== null && forecast < 50) {
+    return { title: '⚠️ ' + USER_NAME + ', прогноз ' + forecast + '% — тревожно', body: 'Если так пойдёт дальше — закончишь месяц на ' + forecast + '%. ' + leftStr + ' Начни с одного звонка, дальше пойдёт по инерции.' };
+  }
+  if (forecast !== null && forecast < 80) {
+    return { title: USER_NAME + ', прогноз ' + forecast + '% — дожми', body: 'Ещё немного и выйдешь в плюс. ' + leftStr + ' Не откладывай на вечер.' };
+  }
+  if (forecast !== null && forecast < 100) {
+    return { title: USER_NAME + ', прогноз ' + forecast + '% — почти 100', body: 'Ты в шаге от отличного месяца. ' + leftStr + ' Финальный рывок.' };
+  }
+  return { title: USER_NAME + ', ' + forecast + '% — с опережением 🚀', body: todayDone ? 'Сегодняшняя норма закрыта. Отдыхай — завтра снова в бой.' : 'Держи планку. ' + leftStr };
+}
+
+// ================== GIST SYNC ==================
+const GIST_API = 'https://api.github.com/gists/';
+let syncState = { busy: false, lastOk: 0, lastErr: null };
+
+function isSyncConfigured() {
+  const s = getSync();
+  return !!(s.token && s.gistId);
+}
+
+function updateSyncDot() {
+  const dot = document.getElementById('syncDot');
+  const foot = document.getElementById('syncFooter');
+  if (!dot) return;
+  dot.classList.remove('ok', 'err', 'busy');
+  if (!isSyncConfigured()) {
+    foot.textContent = 'Синхронизация: выкл';
+    return;
+  }
+  if (syncState.busy) { dot.classList.add('busy'); foot.textContent = 'Синхронизация: идёт...'; return; }
+  if (syncState.lastErr) { dot.classList.add('err'); foot.textContent = 'Синхронизация: ошибка'; return; }
+  if (syncState.lastOk) { dot.classList.add('ok'); foot.textContent = 'Синхронизация: ' + new Date(syncState.lastOk).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); return; }
+  foot.textContent = 'Синхронизация: настроена';
+}
+
+async function fetchFromGist() {
+  const s = getSync();
+  if (!s.token || !s.gistId) return null;
+  const res = await fetch(GIST_API + s.gistId, {
+    headers: { 'Authorization': 'Bearer ' + s.token, 'Accept': 'application/vnd.github+json' }
+  });
+  if (!res.ok) throw new Error('GET ' + res.status);
+  const json = await res.json();
+  const file = json.files && json.files['kpi-data.json'];
+  if (!file) return null;
+  if (file.truncated && file.raw_url) {
+    const raw = await fetch(file.raw_url);
+    return await raw.json();
+  }
+  try { return JSON.parse(file.content); } catch { return null; }
+}
+
+async function pushToGist() {
+  const s = getSync();
+  if (!s.token || !s.gistId) return false;
+  const payload = { 'kpi-data.json': { content: JSON.stringify(getData()) } };
+  const res = await fetch(GIST_API + s.gistId, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Bearer ' + s.token,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ files: payload })
+  });
+  if (!res.ok) throw new Error('PATCH ' + res.status);
+  return true;
+}
+
+let pushTimer = null;
+function schedulePush() {
+  if (!isSyncConfigured()) return;
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    syncState.busy = true;
+    syncState.lastErr = null;
+    updateSyncDot();
+    try {
+      await pushToGist();
+      syncState.lastOk = Date.now();
+    } catch (e) {
+      console.warn('push failed:', e);
+      syncState.lastErr = e.message;
+    } finally {
+      syncState.busy = false;
+      updateSyncDot();
+    }
+  }, 1500);
+}
+
+async function pullFromGist() {
+  if (!isSyncConfigured()) return false;
+  syncState.busy = true;
+  syncState.lastErr = null;
+  updateSyncDot();
+  try {
+    const remote = await fetchFromGist();
+    if (remote && typeof remote === 'object') {
+      localStorage.setItem(DATA_KEY, JSON.stringify(remote));
+      syncState.lastOk = Date.now();
+      render();
+      return true;
+    }
+    // если в гисте пусто — заливаем локальные данные
+    await pushToGist();
+    syncState.lastOk = Date.now();
+    return true;
+  } catch (e) {
+    console.warn('pull failed:', e);
+    syncState.lastErr = e.message;
+    return false;
+  } finally {
+    syncState.busy = false;
+    updateSyncDot();
+  }
+}
+
+// ================== SETTINGS MODAL ==================
+function openSettings() {
+  const s = getSync();
+  document.getElementById('tokenInput').value = s.token || '';
+  document.getElementById('gistInput').value = s.gistId || '';
+  const st = document.getElementById('syncStatus');
+  st.className = 'sync-status';
+  st.textContent = isSyncConfigured() ? 'Синхронизация настроена. Можно синхронизировать вручную.' : 'Введи токен и ID, нажми «Сохранить», затем «Синхр. сейчас».';
+  document.getElementById('settingsBg').classList.add('show');
+}
+function closeSettings() { document.getElementById('settingsBg').classList.remove('show'); }
+
+function saveSyncSettings() {
+  const token = document.getElementById('tokenInput').value.trim();
+  const gistId = document.getElementById('gistInput').value.trim();
+  if (!token || !gistId) {
+    const st = document.getElementById('syncStatus');
+    st.className = 'sync-status err';
+    st.textContent = 'Нужны и токен, и ID гиста.';
+    return;
+  }
+  saveSync({ token, gistId });
+  syncState.lastErr = null;
+  updateSyncDot();
+  const st = document.getElementById('syncStatus');
+  st.className = 'sync-status ok';
+  st.textContent = 'Сохранено. Нажми «Синхр. сейчас», чтобы проверить связь.';
+}
+
+function clearSyncSettings() {
+  if (!confirm('Отключить синхронизацию? Данные в браузере останутся, но перестанут уходить в Gist.')) return;
+  localStorage.removeItem(SYNC_KEY);
+  syncState.lastErr = null;
+  syncState.lastOk = 0;
+  updateSyncDot();
+  const st = document.getElementById('syncStatus');
+  st.className = 'sync-status';
+  st.textContent = 'Синхронизация отключена.';
+}
+
+async function manualSync() {
+  const st = document.getElementById('syncStatus');
+  st.className = 'sync-status';
+  st.textContent = 'Синхронизация...';
+  if (!isSyncConfigured()) {
+    st.className = 'sync-status err';
+    st.textContent = 'Сначала сохрани токен и ID.';
+    return;
+  }
+  // Сначала пробуем забрать из гиста (если там есть данные) — потом отправить актуальное
+  try {
+    const remote = await fetchFromGist();
+    if (remote && Object.keys(remote).length > 0) {
+      const localHasData = Object.keys(getData()).length > 0;
+      if (localHasData) {
+        const choice = confirm('В Gist уже есть данные, и в браузере тоже. OK — загрузить из Gist (перезапишет локальные). Отмена — отправить локальные в Gist.');
+        if (choice) {
+          localStorage.setItem(DATA_KEY, JSON.stringify(remote));
+          render();
+          syncState.lastOk = Date.now();
+          st.className = 'sync-status ok';
+          st.textContent = 'Загружено из Gist. Локальные данные заменены.';
+          updateSyncDot();
+          return;
+        } else {
+          await pushToGist();
+          syncState.lastOk = Date.now();
+          st.className = 'sync-status ok';
+          st.textContent = 'Отправлено в Gist.';
+          updateSyncDot();
+          return;
+        }
+      } else {
+        localStorage.setItem(DATA_KEY, JSON.stringify(remote));
+        render();
+        syncState.lastOk = Date.now();
+        st.className = 'sync-status ok';
+        st.textContent = 'Загружено из Gist.';
+        updateSyncDot();
+        return;
+      }
+    } else {
+      await pushToGist();
+      syncState.lastOk = Date.now();
+      st.className = 'sync-status ok';
+      st.textContent = 'Gist пуст — отправлены локальные данные.';
+      updateSyncDot();
+      return;
+    }
+  } catch (e) {
+    syncState.lastErr = e.message;
+    st.className = 'sync-status err';
+    st.textContent = 'Ошибка: ' + e.message + '. Проверь токен (право gist), ID и интернет.';
+    updateSyncDot();
+  }
+}
+
+// ================== RENDER ==================
+function render() {
+  const now = new Date();
+  const month = sumRange(startOfMonth(now), now);
+  const pct = (m, g) => Math.min(100, Math.round(m / g * 100));
+  const pCalls = pct(month.calls, GOAL.calls);
+  const pMin = pct(month.minutes, GOAL.minutes);
+  const pAn = pct(month.analytics, GOAL.analytics);
+  const overall = Math.round((pCalls + pMin + pAn) / 3);
+
+  document.getElementById('mainPct').innerHTML = overall + '<sup>%</sup>';
+  document.getElementById('kCalls').textContent = month.calls;
+  document.getElementById('kMin').textContent = month.minutes;
+  document.getElementById('kAn').textContent = month.analytics;
+  document.getElementById('pCalls').textContent = pCalls + '%';
+  document.getElementById('pMin').textContent = pMin + '%';
+  document.getElementById('pAn').textContent = pAn + '%';
+  document.getElementById('kCallsBar').style.width = pCalls + '%';
+  document.getElementById('kMinBar').style.width = pMin + '%';
+  document.getElementById('kAnBar').style.width = pAn + '%';
+
+  const fc = getForecast();
+  const fcEl = document.getElementById('forecast');
+  if (fc === null) {
+    fcEl.textContent = 'Введи первые данные — покажу прогноз.';
+  } else if (fc >= 100) {
+    fcEl.innerHTML = 'Прогноз: <strong>идёшь с опережением</strong> · +' + (fc - 100) + '%';
+  } else {
+    fcEl.innerHTML = 'При текущем темпе закончишь на <strong>' + fc + '%</strong>';
+  }
+
+  const target = getTodayTarget();
+  const today = getDay(todayKey());
+  document.getElementById('inCalls').value = today.calls || '';
+  document.getElementById('inMin').value = today.minutes || '';
+  document.getElementById('inAn').value = today.analytics || '';
+  document.getElementById('targetCalls').textContent = '/ ' + target.calls;
+  document.getElementById('targetMin').textContent = '/ ' + target.minutes;
+  document.getElementById('targetAn').textContent = '/ ' + target.analytics;
+
+  const setBar = (id, fieldId, val, tgt) => {
+    const p = tgt > 0 ? Math.min(100, Math.round(val / tgt * 100)) : 0;
+    document.getElementById(id).style.width = p + '%';
+    document.getElementById(fieldId).classList.toggle('completed', val >= tgt);
+  };
+  setBar('fieldBarCalls', 'fieldCalls', today.calls || 0, target.calls);
+  setBar('fieldBarMin', 'fieldMin', today.minutes || 0, target.minutes);
+  setBar('fieldBarAn', 'fieldAn', today.analytics || 0, target.analytics);
+
+  let done = 0;
+  if ((today.calls || 0) >= target.calls) done++;
+  if ((today.minutes || 0) >= target.minutes) done++;
+  if ((today.analytics || 0) >= target.analytics) done++;
+  document.getElementById('todayMeta').textContent = done + ' / 3';
+
+  const week = sumRange(startOfWeek(now), now);
+  document.getElementById('weekMeta').textContent = week.calls + ' / 75';
+
+  const grid = document.getElementById('weekGrid');
+  grid.innerHTML = '';
+  const names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const weekStart = startOfWeek(now);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const v = getDay(k);
+    const isToday = k === todayKey();
+    const el = document.createElement('div');
+    el.className = 'day' + (isToday ? ' day-today' : '');
+    el.innerHTML = '<div class="day-name">' + names[i] + '</div><div class="day-val">' + (v.calls || 0) + '</div>';
+    grid.appendChild(el);
+  }
+
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  document.getElementById('dateLabel').textContent = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+
+  updateMiniWidget();
+  updateSyncDot();
+}
+
+function toggle(id) { document.getElementById(id).classList.toggle('open'); }
+
+// ================== INPUT HANDLERS ==================
+const inputMap = { inCalls: 'calls', inMin: 'minutes', inAn: 'analytics' };
+const fieldMap = { inCalls: 'fieldCalls', inMin: 'fieldMin', inAn: 'fieldAn' };
+const targetMap = { calls: 'calls', minutes: 'minutes', analytics: 'analytics' };
+
+['inCalls', 'inMin', 'inAn'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', e => {
+    const val = parseInt(e.target.value) || 0;
+    const day = getDay(todayKey());
+    day[inputMap[id]] = val;
+    saveDay(todayKey(), day);
+    const target = getTodayTarget();
+    const key = inputMap[id];
+    if (val >= target[targetMap[key]] && val > 0) {
+      const field = document.getElementById(fieldMap[id]);
+      field.classList.remove('reached');
+      void field.offsetWidth;
+      field.classList.add('reached');
+      setTimeout(() => field.classList.remove('reached'), 800);
+    }
+    render();
+    schedulePush();
+  });
+});
+
+document.getElementById('catchupToggle').checked = settings.catchUp;
+document.getElementById('catchupToggle').addEventListener('change', e => {
+  settings.catchUp = e.target.checked;
+  saveSettings(settings);
+  render();
+  schedulePush();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Сбросить все данные KPI? Это действие нельзя отменить.')) {
+    if (confirm('Точно? Все записи за все дни будут удалены.')) {
+      localStorage.removeItem(DATA_KEY);
+      render();
+      schedulePush();
+    }
+  }
+});
+
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+
+// ================== ALARM MODAL ==================
+function fireAlarm() {
+  const msg = buildMotivationMessage();
+  document.getElementById('modalTitle').textContent = msg.title;
+  document.getElementById('modalBody').textContent = msg.body;
+  const today = getDay(todayKey());
+  const month = sumRange(startOfMonth(new Date()), new Date());
+  const target = getTodayTarget();
+  document.getElementById('modalGoal').innerHTML =
+    'Сегодня: <strong>' + (today.calls || 0) + '/' + target.calls + '</strong> · <strong>' + (today.minutes || 0) + '/' + target.minutes + ' мин</strong> · <strong>' + (today.analytics || 0) + '/' + target.analytics + ' ан.</strong><br>' +
+    'Месяц: <strong>' + month.calls + '/300</strong> · <strong>' + month.minutes + '/1200</strong> · <strong>' + month.analytics + '/60</strong>';
+  document.getElementById('modalBg').classList.add('show');
+  sendNotification(msg.title, msg.body);
+  syncStateToSW();
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+
+// ================== ALARM SCHEDULER ==================
+const firedToday = {};
+function checkAlarmsInPage() {
+  const now = new Date();
+  const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const key = todayKey() + '_' + hhmm;
+  if (ALARM_TIMES.includes(hhmm) && !firedToday[key]) {
+    firedToday[key] = true;
+    fireAlarm();
+  }
+}
+setInterval(checkAlarmsInPage, 30000);
+
+// ================== SERVICE WORKER ==================
+let swReg = null;
+async function initSW() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol === 'file:') {
+    console.warn('SW не работает на file:// — залей на GitHub Pages');
+    return;
+  }
+  try {
+    swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    await navigator.serviceWorker.ready;
+    console.log('✅ Service Worker готов');
+    if (swReg.active) swReg.active.postMessage({ type: 'updateConfig', times: ALARM_TIMES });
+    registerPeriodicSync();
+  } catch (e) { console.warn('SW registration failed:', e); }
+}
+async function registerPeriodicSync() {
+  if (!swReg || !('periodicSync' in swReg)) return;
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+      if (status.state !== 'granted') return;
+    }
+    await swReg.periodicSync.register('kpi-alarm-check', { minInterval: 15 * 60 * 1000 });
+  } catch (e) { console.warn('periodicSync failed:', e); }
+}
+function sendNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (swReg && swReg.active) swReg.active.postMessage({ type: 'notify', title, body });
+  else { try { new Notification(title, { body }); } catch (e) {} }
+}
+function syncStateToSW() {
+  if (!swReg || !swReg.active) return;
+  const msg = buildMotivationMessage();
+  try { swReg.active.postMessage({ type: 'saveState', payload: { title: msg.title, body: msg.body, updatedAt: Date.now() } }); } catch (e) {}
+}
+
+async function updateBell() {
+  const bell = document.getElementById('bellBtn');
+  bell.classList.remove('active', 'muted');
+  if (!('Notification' in window)) { bell.textContent = '🔕'; bell.classList.add('muted'); bell.title = 'Уведомления не поддерживаются'; return; }
+  if (Notification.permission === 'granted') { bell.textContent = '🔔'; bell.classList.add('active'); bell.title = 'Уведомления включены — напомню в 13:00 и 15:00'; }
+  else if (Notification.permission === 'denied') { bell.textContent = '🔕'; bell.classList.add('muted'); bell.title = 'Уведомления запрещены в настройках браузера.'; }
+  else { bell.textContent = '🔔'; bell.title = 'Нажми, чтобы включить уведомления'; }
+}
+
+document.getElementById('bellBtn').addEventListener('click', async () => {
+  if (!('Notification' in window)) { alert('Этот браузер не поддерживает уведомления.'); return; }
+  if (Notification.permission === 'denied') { alert('Уведомления заблокированы. Открой настройки сайта в браузере и разреши уведомления.'); return; }
+  if (Notification.permission === 'default') {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') sendNotification('Уведомления включены ✓', 'Напомню в 13:00 и 15:00. Тестируй кнопкой Test alarm.');
+  }
+  await updateBell();
+});
+
+// ================== MINI WIDGET (Document PiP) ==================
+let pipWindow = null;
+async function openMiniWidget() {
+  if (!('documentPictureInPicture' in window)) { alert('Мини-режим работает только в Chrome 116+ / Edge.'); return; }
+  if (pipWindow && !pipWindow.closed) { pipWindow.focus(); return; }
+  try {
+    pipWindow = await documentPictureInPicture.requestWindow({ width: 320, height: 190 });
+    pipWindow.document.head.innerHTML = '<meta charset="UTF-8"><title>KPI</title>';
+    const fontsLink = pipWindow.document.createElement('link');
+    fontsLink.rel = 'stylesheet';
+    fontsLink.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap';
+    pipWindow.document.head.appendChild(fontsLink);
+    const widgetStyle = pipWindow.document.createElement('style');
+    widgetStyle.textContent = `
+      *{margin:0;padding:0;box-sizing:border-box}
+      html,body{background:#F0EBE0;color:#111;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden;user-select:none}
+      .pip-widget{height:100vh;padding:14px 16px 12px;display:flex;flex-direction:column;justify-content:space-between}
+      .pip-top{display:flex;justify-content:space-between;align-items:center}
+      .pip-time{font-family:'DM Serif Display',serif;font-size:32px;line-height:1;letter-spacing:-.02em}
+      .pip-top-right{display:flex;align-items:center;gap:6px}
+      .pip-date{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:#6B6558}
+      .pip-open{background:transparent;border:none;color:#6B6558;font-size:15px;cursor:pointer;padding:2px 4px;line-height:1;transition:color .2s}
+      .pip-open:hover{color:#C43E2C}
+      .pip-mid{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 0}
+      .pip-pct{font-family:'DM Serif Display',serif;font-size:44px;line-height:1;letter-spacing:-.04em}
+      .pip-pct sup{font-size:.4em;color:#C43E2C;vertical-align:super}
+      .pip-mini{display:flex;gap:6px;align-items:baseline;font-family:'DM Serif Display',serif;font-size:15px;white-space:nowrap}
+      .pip-num i{font-style:italic;color:#6B6558;font-size:.85em}
+      .pip-sep{color:#D8D0BE;font-size:11px;margin:0 1px}
+      .pip-bar{height:3px;background:#D8D0BE;overflow:hidden;margin:2px 0 4px}
+      .pip-bar-fill{height:100%;background:#C43E2C;transition:width .6s ease}
+      .pip-foot{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#6B6558;padding-top:6px;border-top:1px solid #D8D0BE}
+    `;
+    pipWindow.document.head.appendChild(widgetStyle);
+    pipWindow.document.body.innerHTML = `
+      <div class="pip-widget">
+        <div class="pip-top">
+          <div class="pip-time" id="pipTime">--:--</div>
+          <div class="pip-top-right">
+            <div class="pip-date" id="pipDate">—</div>
+            <button class="pip-open" id="pipOpen" title="Открыть журнал">↗</button>
+          </div>
+        </div>
+        <div class="pip-mid">
+          <div class="pip-pct" id="pipPct">0<sup>%</sup></div>
+          <div class="pip-mini" id="pipMini">—</div>
+        </div>
+        <div class="pip-bar"><div class="pip-bar-fill" id="pipBarFill" style="width:0%"></div></div>
+        <div class="pip-foot" id="pipFoot">—</div>
+      </div>`;
+    pipWindow.document.getElementById('pipOpen').addEventListener('click', () => window.focus());
+    pipWindow.addEventListener('pagehide', () => {
+      if (pipWindow && pipWindow.__timer) clearInterval(pipWindow.__timer);
+      pipWindow = null;
+      updatePipBtn();
+    });
+    updateMiniWidget();
+    pipWindow.__timer = setInterval(updateMiniWidget, 1000);
+    updatePipBtn();
+  } catch (e) { console.warn('PiP failed:', e); alert('Не удалось открыть мини-режим: ' + (e.message || e)); pipWindow = null; updatePipBtn(); }
+}
+function updateMiniWidget() {
+  if (!pipWindow || pipWindow.closed) return;
+  const doc = pipWindow.document;
+  const now = new Date();
+  const timeEl = doc.getElementById('pipTime');
+  if (timeEl) timeEl.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const dateEl = doc.getElementById('pipDate');
+  if (dateEl) {
+    const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    dateEl.textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+  }
+  const month = sumRange(startOfMonth(now), now);
+  const pct = (m, g) => Math.min(100, Math.round(m / g * 100));
+  const overall = Math.round((pct(month.calls, GOAL.calls) + pct(month.minutes, GOAL.minutes) + pct(month.analytics, GOAL.analytics)) / 3);
+  const pctEl = doc.getElementById('pipPct');
+  if (pctEl) pctEl.innerHTML = overall + '<sup>%</sup>';
+  const today = getDay(todayKey());
+  const target = getTodayTarget();
+  const miniEl = doc.getElementById('pipMini');
+  if (miniEl) miniEl.innerHTML = '<span class="pip-num">' + (today.calls || 0) + '<i>/' + target.calls + '</i></span><span class="pip-sep">·</span><span class="pip-num">' + (today.minutes || 0) + '<i>/' + target.minutes + '</i></span><span class="pip-sep">·</span><span class="pip-num">' + (today.analytics || 0) + '<i>/' + target.analytics + '</i></span>';
+  const barEl = doc.getElementById('pipBarFill');
+  if (barEl) barEl.style.width = overall + '%';
+  const footEl = doc.getElementById('pipFoot');
+  if (footEl) footEl.textContent = getNextAlarmText(now);
+}
+function getNextAlarmText(now) {
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const alarms = ALARM_TIMES.map(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; }).sort((a, b) => a - b);
+  for (const a of alarms) {
+    if (a > nowMin) {
+      const diff = a - nowMin, h = Math.floor(diff / 60), m = diff % 60;
+      return 'До напоминания · ' + (h > 0 ? h + 'ч ' : '') + m + 'м';
+    }
+  }
+  const diff = 24 * 60 - nowMin + alarms[0], h = Math.floor(diff / 60), m = diff % 60;
+  return 'До напоминания · ' + (h > 0 ? h + 'ч ' : '') + m + 'м';
+}
+function updatePipBtn() {
+  const btn = document.getElementById('pipBtn');
+  if (!btn) return;
+  const isOpen = pipWindow && !pipWindow.closed;
+  btn.classList.toggle('active', !!isOpen);
+  btn.title = isOpen ? 'Мини-режим открыт' : 'Открыть мини-режим';
+}
+document.getElementById('pipBtn').addEventListener('click', openMiniWidget);
+
+// ================== INIT ==================
+render();
+setInterval(render, 60000);
+initSW().then(() => { updateBell(); syncStateToSW(); });
+// При загрузке: если синхронизация настроена — подтянуть данные из Gist
+if (isSyncConfigured()) {
+  pullFromGist().then(ok => { if (!ok) updateSyncDot(); });
+}
+</script>
+</body>
+</html>

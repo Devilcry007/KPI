@@ -1,0 +1,14 @@
+{
+  "name": "KPI Journal",
+  "short_name": "KPI",
+  "description": "Трекер дневных KPI — звонки, минуты, аналитики",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F0EBE0",
+  "theme_color": "#F0EBE0",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
